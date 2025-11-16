@@ -118,6 +118,116 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 ```
+```
+/*
+ * file_lock.c
+ *
+ * This program demonstrates how to acquire an exclusive (write) lock
+ * on a file using fcntl(). The program locks the file, "holds" the
+ * lock for 10 seconds, and then releases it.
+ *
+ * Usage:
+ * ./file_lock <file_to_lock>
+ *
+ * How to Test:
+ * 1. Compile the program:
+ * gcc file_lock.c -o file_lock
+ *
+ * 2. Open two separate terminal windows (Terminal 1 and Terminal 2).
+ *
+ * 3. In Terminal 1, run the program:
+ * ./file_lock test.lockfile
+ *
+ * You will see: "Attempting to acquire exclusive lock..."
+ * "Lock acquired! Holding for 10 seconds..."
+ *
+ * 4. IMMEDIATELY (within 10 seconds), in Terminal 2, run the *same* command:
+ * ./file_lock test.lockfile
+ *
+ * You will see: "Attempting to acquire exclusive lock..."
+ * This terminal will now *wait* and appear to be frozen.
+ *
+ * 5. Wait for Terminal 1 to finish. After 10 seconds, it will print:
+ * "Releasing lock..."
+ * "Lock released."
+ *
+ * 6. As soon as Terminal 1 releases the lock, Terminal 2 will
+ * immediately acquire it and print:
+ * "Lock acquired! Holding for 10 seconds..."
+ * ...and then it will release it after its own 10 seconds.
+ */
+
+#include <stdio.h>      // For perror, printf, puts
+#include <stdlib.h>     // For exit, EXIT_FAILURE, EXIT_SUCCESS
+#include <fcntl.h>      // For open() and fcntl()
+#include <unistd.h>     // For close(), sleep(), getpid()
+
+int main(int argc, char *argv[]) {
+    int fd;
+    struct flock lock;
+
+    if (argc != 2) {
+        printf("Usage: %s <file_to_lock>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Open the file for reading and writing.
+    // O_CREAT will create it if it doesn't exist.
+    fd = open(argv[1], O_RDWR | O_CREAT, 0666); // 0666 for easy permissions
+    if (fd == -1) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // --- Acquire the Lock ---
+
+    puts("Attempting to acquire exclusive lock...");
+
+    // Initialize the flock structure for locking
+    lock.l_type = F_WRLCK;      // Exclusive Write Lock
+    lock.l_whence = SEEK_SET;   // Lock from the start of the file
+    lock.l_start = 0;           // Starting offset (0)
+    lock.l_len = 0;             // Length (0 means lock the entire file)
+    lock.l_pid = getpid();      // (Not used by F_SETLKW, but good practice)
+
+    // F_SETLKW: Set Lock and Wait
+    // This call will BLOCK (wait) if the lock is already held by
+    // another process. It will only return once it acquires the lock
+    // or if an error occurs.
+    if (fcntl(fd, F_SETLKW, &lock) == -1) {
+        perror("fcntl (F_SETLKW)");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Lock acquired! (PID: %d) Holding for 10 seconds...\n", getpid());
+    printf("You can now run this program from another terminal to see it wait.\n");
+
+    // Simulate doing "work" while holding the lock
+    sleep(10);
+
+    // --- Release the Lock ---
+
+    puts("Releasing lock...");
+
+    // To release the lock, set the type to F_UNLCK
+    // and call fcntl again with the same lock region.
+    lock.l_type = F_UNLCK;
+
+    if (fcntl(fd, F_SETLKW, &lock) == -1) {
+        perror("fcntl (F_UNLCK)");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+
+    puts("Lock released.");
+
+    // Close the file
+    close(fd);
+
+    return EXIT_SUCCESS;
+}
+```
 
 
 ## OUTPUT
