@@ -232,9 +232,9 @@ int main(int argc, char *argv[]) {
 
 ## OUTPUT
 
-1. -rwxr-xr-x    1 root     root         18348 Apr 17 14:14 file.o
-2. -rwxr-xr-x    1 root     root         18376 Apr 17 14:20 text.o
+<img width="812" height="412" alt="Screenshot from 2025-11-16 15-13-54" src="https://github.com/user-attachments/assets/968defe8-8cbc-454d-8f7e-f75065f960cd" />
 
+<img width="994" height="727" alt="Screenshot from 2025-11-16 15-20-07" src="https://github.com/user-attachments/assets/bf6151ad-1dea-4ee6-98ce-a6861a4cb2cf" />
 
 
 # RESULT:
